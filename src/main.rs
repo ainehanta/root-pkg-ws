@@ -50,6 +50,7 @@ fn dump_metadata(
     let _resolve = _metadata.resolve.unwrap();
     let _nodes = _resolve.nodes;
     for _node in _nodes.iter() {
+        // Dump metadata in pre-v1.77.0 format
         if _node.id.repr.contains("(") {
             let iter: Vec<_> = _node.id.repr.split_whitespace().collect();
             if iter[2] == "(registry+https://github.com/rust-lang/crates.io-index)" {
@@ -83,8 +84,8 @@ fn dump_metadata(
             } else {
                 println!("[not handled] {}", iter[2]);
             }
+        // Dump metadata in v1.77.0 or later format
         } else {
-            // registry+https://github.com/rust-lang/crates.io-index#argh@0.1.12
             let repr = _node.id.repr.to_owned();
             if repr.contains("registry+https://github.com/rust-lang/crates.io-index") {
                 let iter: Vec<_> = _node.id.repr.split('#').collect();
@@ -99,13 +100,10 @@ fn dump_metadata(
 
                 crates.insert(crate_repo);
             } else if repr.contains("path+") {
-                // path+file:///Users/takumma/work/root-pkg-ws#0.1.0
                 let iter: Vec<_> = _node.id.repr.split('#').collect();
                 let repo: Vec<_> = iter[0].split("file://").collect();
                 file_list.push(repo[1].to_owned());
             } else if repr.contains("git+") {
-                // git+ssh://git@github.com/rust-lang/regex.git?branch=dev#regex@1.4.3
-                // git+https://github.com/rust-lang/regex.git?branch=ag%2Ftweaks#regex-automata@0.4.1
                 let repo: Vec<_> = repr.split('+').collect();
                 let repository: Vec<_> = repo[1].split('?').collect();
                 let url: String = repository[0].to_owned();
