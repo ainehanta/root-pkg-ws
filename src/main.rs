@@ -20,7 +20,7 @@ struct Cli {
     manifest_path: String,
 }
 
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Eq, Hash, PartialEq, Debug, Clone)]
 struct GitRepo {
     url: String,
     rev: Option<String>,
@@ -210,7 +210,8 @@ fn main() {
 
     let git_list: IndexSet<GitRepo> = git_list
         .iter()
-        .filter_map(|git_repo| {
+        .cloned()
+        .map(|git_repo| {
             let protocol: Vec<_> = git_repo.url.split("://").collect();
             let folder = get_repo_folder_name(protocol[1].to_string());
             println!(
@@ -224,14 +225,14 @@ fn main() {
                 .clone(&git_repo.url, Path::new(&folder))
                 .expect("failed to clone repository");
 
-            let spec = match git_repo {
+            let spec = match &git_repo {
                 GitRepo { rev: Some(rev), .. } => rev.clone(),
                 GitRepo { tag: Some(tag), .. } => format!("refs/tags/{}", tag),
                 GitRepo {
                     branch: Some(branch),
                     ..
                 } => format!("refs/remotes/origin/{}", branch),
-                _ => return None,
+                _ => return git_repo,
             };
 
             let obj = repo.revparse_single(&spec).unwrap();
@@ -258,12 +259,12 @@ fn main() {
                 }
             }
 
-            Some(GitRepo {
+            GitRepo {
                 url: git_repo.url.clone(),
                 rev: Some(obj.id().to_string()),
                 branch: git_repo.branch.clone(),
                 tag: git_repo.tag.clone(),
-            })
+            }
         })
         .collect();
     dir.close().unwrap();
